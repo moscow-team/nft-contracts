@@ -11,11 +11,6 @@ const config: HardhatUserConfig = {
     localhost: {
       url: "http://127.0.0.1:8545",
     },
-    // configuración para Mumbai (testnet)
-    mumbai: {
-      url: process.env.POLYGON_RPC!,
-      accounts: [process.env.PRIVATE_KEY!],
-    },
   },
 };
 

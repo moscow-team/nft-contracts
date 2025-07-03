@@ -19,6 +19,12 @@ contract Marketplace is ReentrancyGuard {
     // seller → saldo acumulado
     mapping(address => uint256) public proceeds;
 
+    // ─────────────────────────────────────────────────────────────────────
+    // Para devolver todos los listings:
+    uint256[] private listedTokenIds;
+    mapping(uint256 => uint256) private listedTokenIndex;
+    // ─────────────────────────────────────────────────────────────────────
+
     // Eventos
     event NFTListed(uint256 indexed tokenId, address seller, uint256 price);
     event NFTPurchased(uint256 indexed tokenId, address buyer, uint256 price);
@@ -33,9 +39,13 @@ contract Marketplace is ReentrancyGuard {
     function listItem(uint256 tokenId, uint256 price) external {
         require(price > 0, "Precio debe ser > 0");
         require(nftContract.ownerOf(tokenId) == msg.sender, "No eres propietario");
-        // transferir la aprobación antes de llamar a listItem:
-        // nftContract.approve(address(this), tokenId);
+
         listings[tokenId] = Listing(msg.sender, price);
+
+        // Añadir tokenId al array global
+        listedTokenIndex[tokenId] = listedTokenIds.length;
+        listedTokenIds.push(tokenId);
+
         emit NFTListed(tokenId, msg.sender, price);
     }
 
@@ -56,6 +66,9 @@ contract Marketplace is ReentrancyGuard {
         // Transferir el NFT al comprador
         nftContract.safeTransferFrom(item.seller, msg.sender, tokenId);
 
+        // Eliminar tokenId del array global
+        _removeGlobalListing(tokenId);
+
         // Borrar el listing
         delete listings[tokenId];
 
@@ -72,5 +85,37 @@ contract Marketplace is ReentrancyGuard {
         require(paymentToken.transfer(msg.sender, amount), "Retiro fallido");
 
         emit ProceedsWithdrawn(msg.sender, amount);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Helper para eliminar de listedTokenIds
+    function _removeGlobalListing(uint256 tokenId) internal {
+        uint256 index       = listedTokenIndex[tokenId];
+        uint256 lastTokenId = listedTokenIds[listedTokenIds.length - 1];
+
+        // Swap & pop
+        listedTokenIds[index] = lastTokenId;
+        listedTokenIndex[lastTokenId] = index;
+
+        listedTokenIds.pop();
+        delete listedTokenIndex[tokenId];
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    /// @notice Devuelve todos los tokenIds actualmente listados y sus precios
+    function getAllListings()
+        external
+        view
+        returns (uint256[] memory tokenIds, uint256[] memory prices)
+    {
+        uint256 len = listedTokenIds.length;
+        tokenIds = new uint256[](len);
+        prices   = new uint256[](len);
+
+        for (uint i = 0; i < len; i++) {
+            uint256 id = listedTokenIds[i];
+            tokenIds[i] = id;
+            prices[i]   = listings[id].price;
+        }
     }
 }
