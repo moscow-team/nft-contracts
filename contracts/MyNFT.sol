@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract MyNFT is ERC721URIStorage, Ownable {
     uint256 private _nextTokenId = 1;
 
+    event NFTMinted(address indexed to, uint256 indexed tokenId, string uri);
+
     // Solo llamamos al constructor de ERC721
     constructor() ERC721("MiNFT", "MNFT") {}
 
@@ -15,5 +17,8 @@ contract MyNFT is ERC721URIStorage, Ownable {
         _nextTokenId++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+
+        emit NFTMinted(to, tokenId, uri); // <--- 🔥 este evento te da el tokenId
     }
+
 }
