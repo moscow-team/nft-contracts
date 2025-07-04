@@ -21,4 +21,7 @@ contract MyNFT is ERC721URIStorage, Ownable {
         emit NFTMinted(to, tokenId, uri); // <--- 🔥 este evento te da el tokenId
     }
 
+    function totalSupply() public view returns (uint256) {
+        return _nextTokenId - 1;
+    }
 }
